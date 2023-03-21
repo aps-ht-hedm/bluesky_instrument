@@ -5,7 +5,7 @@ This module contains motors customized for APS-MPE group.
 
 EXAMPLE::
 
-    tomostage = StageAero("", name='tomostage')
+    tomostage = StageAero(name='tomostage')
     psofly = EnsemblePSOFlyDevice("PV_PREFIX:", name="psofly")
 
 TODO:
