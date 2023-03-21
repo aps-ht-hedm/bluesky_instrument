@@ -28,7 +28,7 @@ class MyMotorBundle(MotorBundle):
     @property
     def wh(self):
         """
-        wh -- where: Return table of motors, PVs, and current positions.
+        wh -- where: Print table of motors, PVs, and current positions.
         
         Re-named from ``status`` to avoid confusion with ophyd's Status
         objects.
@@ -46,11 +46,11 @@ class MyMotorBundle(MotorBundle):
                     row.append(motor.pvname)
                 else:
                     row.append(motor.prefix)
-                row.append(v)
+                row.append(f"%.{motor.precision}f" % v)
                 table.addRow(row)
             except AttributeError:
                 continue
-        return table
+        print(table)
 
     def cache_position(self):
         """
