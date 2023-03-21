@@ -3,21 +3,77 @@
 """
 This module contains motors customized for APS-MPE group.
 
+EXAMPLE::
+
+    tomostage = StageAero("", name='tomostage')
+    psofly = EnsemblePSOFlyDevice("PV_PREFIX:", name="psofly")
+
 TODO:
 * The motor controls here also include those defined through FPGA.
 * Additional work is required once the actual PVs are knwon.
 """
 
 
-from ophyd   import    Device
-from ophyd   import    MotorBundle
-from ophyd   import    Component
-from ophyd   import    EpicsMotor
-from ophyd   import    EpicsSignal
-from ophyd   import    EpicsSignalRO
+from ophyd import Component
+from ophyd import Device
+from ophyd import EpicsMotor
+from ophyd import EpicsSignal
+from ophyd import EpicsSignalRO
+from ophyd import MotorBundle
 
 
-class TomoCamStage(MotorBundle):
+class MyMotorBundle(MotorBundle):
+
+    @property
+    def status(self):
+        """return full pv list and corresponding values"""
+        # TODO:
+        #   once actual PVs are known, the implementation should go here
+        #   JasonZ's thought is to list useful PV status for users.
+        #   A full list should be implemented in the Ultima for dev.
+        #   Maybe print cached positions?
+        pass
+
+    def cache_position(self):
+        """
+        Cache current motor positions.
+        
+        Build dictionary from component that are EpicsMotor subclass
+        (or override in subclass).
+        """
+        positions_now = {
+            nm: getattr(self, nm).position
+            for nm in self.component_names
+            if "position" in dir(getattr(self, nm))
+        }
+        # TODO: Consider what to do if there is mismatch between
+        #   self._position_cache and positions_now.
+        #   Could happen when a motor is moved manually.
+        self._position_cache = positions_now
+
+    def resume_position(self):
+        """Move motors to cached position."""
+        if "position_cached" not in dir(self):
+            raise AttributeError(
+                "Cannot resume. Must first call 'cache_position()'"
+            )
+
+        # Move all positioners to cached positions.
+        all_status = None  # watch all moves with ``AndStatus`` object
+        for nm, v in self._position_cache.items():
+            motor = getattr(self, nm)
+            st = motor.move(v, wait=False)
+            if all_status is None:
+                all_status = st
+            else:
+                all_status = all_status.__and__(st)  # AndStatus
+
+        # Wait for all motions to end or timeout.
+        if all_status is not None:
+            all_status.wait()
+
+
+class TomoCamStage(MyMotorBundle):
     """
     Motor stacks used for Tomo Camera
 
@@ -30,40 +86,16 @@ class TomoCamStage(MotorBundle):
         -------------
 
     """
-    #   TODO:
-    #   update with actual set up
     tomoy = Component(EpicsMotor, "6idhedm:m48", name='tomoy')  # x motion with kohzu stage
     tomox = Component(EpicsMotor, "6idhedm:m45", name='tomox')  # y motion with kohzu stage
     tomoz = Component(EpicsMotor, "6idhedm:m46", name='tomoz')  # z motion with kohzu stage
-
-    @property
-    def status(self):
-        """return full pv list and corresponding values"""
-        # TODO:
-        #   once actual PVs are known, the implementation should go here
-        #   my thought is to list useful PV status for users,
-        #   a full list should be implemented in the Ultima for dev     /JasonZ
-        #   Maybe print StateAero.position_cached ?
-        pass
-
-    def cache_position(self):
-        """cache current motor positions"""
-        #   Add other motors if any (i.e. Kohzu tilt)
-        # TODO:
-        #   We need to consider what to do when cached positions are not the same
-        #   as the physical positions when a motor is manually moved
-        self.position_cached = {
-            "tomoy" : self.tomoy.position,
-            "tomox" : self.tomox.position,
-            "tomoz" : self.tomoz.position,
-        }
 
 
 # NOTE:
 # The NFCamStage should have similar structure of the Tomo stage
 
 
-class FFCamStage(MotorBundle):
+class FFCamStage(MyMotorBundle):
     """
     Motor stacks used for Tomo Camera
 
@@ -76,40 +108,18 @@ class FFCamStage(MotorBundle):
         -----------
 
     """
-    #   TODO:
-    #   update with actual set up
     # ffy = Component(EpicsMotor, "6idhedm:m48", name='ffy')  # x motion with kohzu stage
+    # FIXME: PV names unknown here
     ffx = Component(EpicsMotor, "6idhedm:m$$", name='ffz')  # y motion with kohzu stage
     ffz = Component(EpicsMotor, "6idhedm:m$$", name='ffz')  # z motion with kohzu stage
-
-    @property
-    def status(self):
-        """return full pv list and corresponding values"""
-        # TODO:
-        #   once actual PVs are known, the implementation should go here
-        #   my thought is to list useful PV status for users,
-        #   a full list should be implemented in the Ultima for dev     /JasonZ
-        #   Maybe print StateAero.position_cached ?
-        pass
-
-    def cache_position(self):
-        """cache current motor positions"""
-        #   Add other motors if any (i.e. Kohzu tilt)
-        # TODO:
-        #   We need to consider what to do when cached positions are not the same
-        #   as the physical positions when a motor is manually moved
-        self.position_cached = {
-            # "ffy" : self.tomoy.position,
-            "ffx" : self.ffx.position,
-            "ffz" : self.ffz.position,
-        }
 
 
 class AeroEpicsMotor(EpicsMotor):
     dial_readback = Component(EpicsSignalRO, '.DRBV', kind='hinted',auto_monitor=True)
     dial_setpoint = Component(EpicsSignal, '.DVAL', limits=True)
 
-class StageAero(MotorBundle):
+
+class StageAero(MyMotorBundle):
     """
     Motor stacks used for HT-HEDM
 
@@ -125,8 +135,6 @@ class StageAero(MotorBundle):
 
     """
 
-    #   TODO:
-    #   update with actual PV
     kx          = Component(EpicsMotor, "6idhedm:m41", name='kx_trans')  # x motion with kohzu stage
     ky          = Component(EpicsMotor, "6idhedm:m40", name='ky_trans')  # y motion with kohzu stage
     kz          = Component(EpicsMotor, "6idhedm:m42", name='kz_trans')  # z motion with kohzu stage
@@ -139,57 +147,13 @@ class StageAero(MotorBundle):
     tiltx_base  = Component(EpicsMotor, "6idhedm:m38",  name='tiltx_base')    # y motion below aero stage
     tiltz_base  = Component(EpicsMotor, "6idhedm:m39",  name='tiltz_base')    # z motion below aero stage
 
-    @property
-    def status(self):
-        """return full pv list and corresponding values"""
-        # TODO:
-        #   once actual PVs are known, the implementation should go here
-        #   my thought is to list useful PV status for users,
-        #   a full list should be implemented in the Ultima for dev     /JasonZ
-        #   Maybe print StateAero.position_cached ?
-        pass
 
-    def cache_position(self):
-        """cache current motor positions"""
-        #   Add other motors if any (i.e. Kohzu tilt)
-        # TODO:
-        #   We need to consider what to do when cached positions are not the same
-        #   as the physical positions when a motor is manually moved
-        self.position_cached = {
-            "kx"            : self.kx.position,
-            "ky"            : self.ky.position,
-            "kz"            : self.kz.position,
-            "kx_tilt"       : self.kx_tilt.position,
-            "kz_tilt"       : self.kz_tilt.position,
-
-            "rot"           : self.rot.position   ,
-
-            "x_base"        : self.x_base.position ,
-            "tiltx_base"    : self.tiltx_base.position ,
-            "tiltz_base"    : self.tiltz_base.position ,
-        }
-
-    def resume_position(self):
-        """move motors to previously cached position"""
-        #   Add other motors if any (i.e. Kohzu tilt)
-        self.kx.mv(self.position_cached['kx'])
-        self.ky.mv(self.position_cached['ky'])
-        self.kz.mv(self.position_cached['kz'])
-        self.kx_tilt.mv(self.position_cached['kx_tilt'])
-        self.kz_tilt.mv(self.position_cached['kz_tilt'])
-
-        self.rot.mv(self.position_cached['rot'])
-
-        self.x_base.mv(self.position_cached['x_base'])
-        self.tiltx_base.mv(self.position_cached['tiltx_base'])
-        self.tiltx_base.mv(self.position_cached['tiltz_base'])
-
-
-class SimStageAero(MotorBundle):
+class SimStageAero(MyMotorBundle):
     """
-    Simulated Motor stacks used for HT-HEDM
-    i.e.:   6iddSIM:m1
-    Sim motors assigned as follows:
+    Simulated Motor stacks used for HT-HEDM (6iddSIM:m1)
+
+    Sim motors assigned as follows::
+
         kx          = m1
         ky          = m2
         kz          = m3
@@ -213,8 +177,7 @@ class SimStageAero(MotorBundle):
 
     """
 
-    #   TODO:
-    #   update with actual PV
+    # TODO: update with actual PV
     kx          = Component(EpicsMotor, "6iddSIM:m1", name='kx_trans')  # x motion with kohzu stage
     ky          = Component(EpicsMotor, "6iddSIM:m2", name='ky_trans')  # y motion with kohzu stage
     kz          = Component(EpicsMotor, "6iddSIM:m3", name='kz_trans')  # z motion with kohzu stage
@@ -226,51 +189,6 @@ class SimStageAero(MotorBundle):
     x_base      = Component(EpicsMotor, "6iddSIM:m16",  name='x_trans')    # x motion below aero stage
     tiltx_base  = Component(EpicsMotor, "6iddSIM:m16",  name='tiltx_trans')    # y motion below aero stage
     tiltz_base  = Component(EpicsMotor, "6iddSIM:m16",  name='tiltz_trans')    # z motion below aero stage
-
-    @property
-    def status(self):
-        """return full pv list and corresponding values"""
-        # TODO:
-        #   once actual PVs are known, the implementation should go here
-        #   my thought is to list useful PV status for users,
-        #   a full list should be implemented in the Ultima for dev     /JasonZ
-        #   Maybe print StateAero.position_cached ?
-        pass
-
-    def cache_position(self):
-        """cache current motor positions"""
-        #   Add other motors if any (i.e. Kohzu tilt)
-        # TODO:
-        #   We need to consider what to do when cached positions are not the same
-        #   as the physical positions when a motor is manually moved
-        self.position_cached = {
-            "kx"       : self.kx.position,
-            "ky"       : self.ky.position,
-            "kz"       : self.kz.position,
-            "kx_tilt"  : self.kx_tilt.position,
-            "kz_tilt"  : self.kz_tilt.position,
-
-            "rot"      : self.rot.position   ,
-
-            "x_base"   : self.x_base.position ,
-            "tiltx_base"   : self.tiltx_base.position ,
-            "tiltz_base"   : self.tiltz_base.position ,
-        }
-
-    def resume_position(self):
-        """move motors to previously cached position"""
-        #   Add other motors if any (i.e. Kohzu tilt)
-        self.kx.mv(self.position_cached['kx'])
-        self.ky.mv(self.position_cached['ky'])
-        self.kz.mv(self.position_cached['kz'])
-        self.kx_tilt.mv(self.position_cached['kx_tilt'])
-        self.kz_tilt.mv(self.position_cached['kz_tilt'])
-
-        self.rot.mv(self.position_cached['rot'])
-
-        self.x_base.mv(self.position_cached['x_base'])
-        self.tiltx_base.mv(self.position_cached['tiltx_base'])
-        self.tiltz_base.mv(self.position_cached['tiltz_base'])
 
 
 class TaxiFlyScanDevice(Device):
@@ -288,7 +206,6 @@ class TaxiFlyScanDevice(Device):
     In a third (optional) phase, data is collected
     from hardware and written to a file.
     """
-    import bluesky.plan_stubs as bps
 
     taxi    = Component(EpicsSignal, "taxi", put_complete=True)
     fly     = Component(EpicsSignal, "fly",  put_complete=True)
@@ -303,14 +220,14 @@ class TaxiFlyScanDevice(Device):
     fi5_signal = EpicsSignal("6idMZ1:SG:FI5_Signal", put_complete=True, name = 'fi5_signal')
 
     def plan(self):
+        import bluesky.plan_stubs as bps
+
         yield from bps.mv(self.taxi, self.taxi.enum_strs[1])
         yield from bps.mv(self.fly, self.fly.enum_strs[1])
 
 
 class EnsemblePSOFlyDevice(TaxiFlyScanDevice):
-    """
-    PSOfly control wrapper
-    """
+    """Aerotech Ensemble PSOfly control wrapper."""
     motor_pv_name = Component(EpicsSignalRO, "motorName")
     start         = Component(EpicsSignal,   "startPos")
     end           = Component(EpicsSignal,   "endPos")
@@ -324,9 +241,3 @@ class EnsemblePSOFlyDevice(TaxiFlyScanDevice):
     detector_setup_time = Component(EpicsSignal,   "detSetupTime")
     pulse_type          = Component(EpicsSignal,   "pulseType"   )
     scan_control        = Component(EpicsSignal,   "scanControl" )
-
-
-if __name__ == "__main__":
-    # example usage
-    tomostage = StageAero(name='tomostage')
-    psofly = EnsemblePSOFlyDevice("actual PV prefix", name="psofly")
