@@ -23,16 +23,34 @@ from ophyd import MotorBundle
 
 
 class MyMotorBundle(MotorBundle):
+    """Apply local enhancements."""
 
     @property
-    def status(self):
-        """return full pv list and corresponding values"""
-        # TODO:
-        #   once actual PVs are known, the implementation should go here
-        #   JasonZ's thought is to list useful PV status for users.
-        #   A full list should be implemented in the Ultima for dev.
-        #   Maybe print cached positions?
-        pass
+    def wh(self):
+        """
+        wh -- where: Return table of motors, PVs, and current positions.
+        
+        Re-named from ``status`` to avoid confusion with ophyd's Status
+        objects.
+        """
+        import pyRestTable
+
+        table = pyRestTable.Table()
+        table.labels = "name PV position".split()
+        for nm in self.component_names:
+            try:
+                motor = getattr(self, nm)
+                v = motor.position  # excepts here if not a motor
+                row = [nm,]
+                if "pvname" in dir(motor):
+                    row.append(motor.pvname)
+                else:
+                    row.append(motor.prefix)
+                row.append(v)
+                table.addRow(row)
+            except AttributeError:
+                continue
+        return table
 
     def cache_position(self):
         """
