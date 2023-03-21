@@ -5,7 +5,7 @@ This module contains motors customized for APS-MPE group.
 
 TODO:
 * The motor controls here also include those defined through FPGA.
-* Additional work is required once the acutal PVs are knwon.
+* Additional work is required once the actual PVs are knwon.
 """
 
 
@@ -31,7 +31,7 @@ class TomoCamStage(MotorBundle):
 
     """
     #   TODO:
-    #   update with acutal set up
+    #   update with actual set up
     tomoy = Component(EpicsMotor, "6idhedm:m48", name='tomoy')  # x motion with kohzu stage
     tomox = Component(EpicsMotor, "6idhedm:m45", name='tomox')  # y motion with kohzu stage
     tomoz = Component(EpicsMotor, "6idhedm:m46", name='tomoz')  # z motion with kohzu stage
@@ -40,7 +40,7 @@ class TomoCamStage(MotorBundle):
     def status(self):
         """return full pv list and corresponding values"""
         # TODO:
-        #   once acutal PVs are known, the implementation should go here
+        #   once actual PVs are known, the implementation should go here
         #   my thought is to list useful PV status for users,
         #   a full list should be implemented in the Ultima for dev     /JasonZ
         #   Maybe print StateAero.position_cached ?
@@ -77,7 +77,7 @@ class FFCamStage(MotorBundle):
 
     """
     #   TODO:
-    #   update with acutal set up
+    #   update with actual set up
     # ffy = Component(EpicsMotor, "6idhedm:m48", name='ffy')  # x motion with kohzu stage
     ffx = Component(EpicsMotor, "6idhedm:m$$", name='ffz')  # y motion with kohzu stage
     ffz = Component(EpicsMotor, "6idhedm:m$$", name='ffz')  # z motion with kohzu stage
@@ -86,7 +86,7 @@ class FFCamStage(MotorBundle):
     def status(self):
         """return full pv list and corresponding values"""
         # TODO:
-        #   once acutal PVs are known, the implementation should go here
+        #   once actual PVs are known, the implementation should go here
         #   my thought is to list useful PV status for users,
         #   a full list should be implemented in the Ultima for dev     /JasonZ
         #   Maybe print StateAero.position_cached ?
@@ -126,7 +126,7 @@ class StageAero(MotorBundle):
     """
 
     #   TODO:
-    #   update with acutal PV
+    #   update with actual PV
     kx          = Component(EpicsMotor, "6idhedm:m41", name='kx_trans')  # x motion with kohzu stage
     ky          = Component(EpicsMotor, "6idhedm:m40", name='ky_trans')  # y motion with kohzu stage
     kz          = Component(EpicsMotor, "6idhedm:m42", name='kz_trans')  # z motion with kohzu stage
@@ -143,7 +143,7 @@ class StageAero(MotorBundle):
     def status(self):
         """return full pv list and corresponding values"""
         # TODO:
-        #   once acutal PVs are known, the implementation should go here
+        #   once actual PVs are known, the implementation should go here
         #   my thought is to list useful PV status for users,
         #   a full list should be implemented in the Ultima for dev     /JasonZ
         #   Maybe print StateAero.position_cached ?
@@ -214,7 +214,7 @@ class SimStageAero(MotorBundle):
     """
 
     #   TODO:
-    #   update with acutal PV
+    #   update with actual PV
     kx          = Component(EpicsMotor, "6iddSIM:m1", name='kx_trans')  # x motion with kohzu stage
     ky          = Component(EpicsMotor, "6iddSIM:m2", name='ky_trans')  # y motion with kohzu stage
     kz          = Component(EpicsMotor, "6iddSIM:m3", name='kz_trans')  # z motion with kohzu stage
@@ -231,7 +231,7 @@ class SimStageAero(MotorBundle):
     def status(self):
         """return full pv list and corresponding values"""
         # TODO:
-        #   once acutal PVs are known, the implementation should go here
+        #   once actual PVs are known, the implementation should go here
         #   my thought is to list useful PV status for users,
         #   a full list should be implemented in the Ultima for dev     /JasonZ
         #   Maybe print StateAero.position_cached ?
@@ -329,4 +329,4 @@ class EnsemblePSOFlyDevice(TaxiFlyScanDevice):
 if __name__ == "__main__":
     # example usage
     tomostage = StageAero(name='tomostage')
-    psofly = EnsemblePSOFlyDevice("acutal PV prefix", name="psofly")
+    psofly = EnsemblePSOFlyDevice("actual PV prefix", name="psofly")

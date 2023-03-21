@@ -191,7 +191,7 @@ class Varex4343CT(SingleTrigger, AreaDetector):
     def status(self):
         """List all related PVs and corresponding values"""
         # TODO:
-        #   provide acutal implementation here
+        #   provide actual implementation here
         return "Not implemented yet"
 
     @property
@@ -214,7 +214,7 @@ class Varex4343CT(SingleTrigger, AreaDetector):
 
     # TODO:
     #  Additional PVs can be wrapped as property for interactive use when the 
-    #  acutal PVs are known.
+    #  actual PVs are known.
 
     def cont_acq(self, _exp, _nframes = -1):
         """
@@ -269,7 +269,7 @@ class PointGreyDetector(SingleTrigger, AreaDetector):
     def status(self):
         """List all related PVs and corresponding values"""
         # TODO:
-        #   provide acutal implementation here
+        #   provide actual implementation here
         return "Not implemented yet"
 
     @property
@@ -292,7 +292,7 @@ class PointGreyDetector(SingleTrigger, AreaDetector):
 
     # TODO:
     #  Additional PVs can be wrapped as property for interactive use when the 
-    #  acutal PVs are known.
+    #  actual PVs are known.
 
     def cont_acq(self, _exp, _period, _nframes = -1):
         """
@@ -330,7 +330,7 @@ class DexelaDetector(SingleTrigger, AreaDetector):
     def status(self):
         """List all related PVs and corresponding values"""
         # TODO:
-        #   provide acutal implementation here
+        #   provide actual implementation here
         return "Not implemented yet"
 
     @property
@@ -351,7 +351,7 @@ class DexelaDetector(SingleTrigger, AreaDetector):
 
     # TODO:
     #  Additional PVs can be wrapped as property for interactive use when the 
-    #  acutal PVs are known.    
+    #  actual PVs are known.    
 
 
 class SimDetectorCam6IDD(PointGreyDetectorCam):
@@ -388,7 +388,7 @@ class SimDetector(SingleTrigger, AreaDetector):
     def status(self):
         """List all related PVs and corresponding values"""
         # TODO:
-        #   provide acutal implementation here
+        #   provide actual implementation here
         return "Not implemented yet"
 
     @property
@@ -411,7 +411,7 @@ class SimDetector(SingleTrigger, AreaDetector):
 
     # TODO:
     #  Additional PVs can be wrapped as property for interactive use when the 
-    #  acutal PVs are known.
+    #  actual PVs are known.
 
 
 if __name__ == "__main__":
