@@ -6,7 +6,7 @@ Detectors customized for APS-MPE group.
 EXAMPLE::
 
     # example on how to make an instance of the PointGrey detector
-    det = PointGreyDetector("IOC_PREFIX:", name='det')
+    det = PointGreyDetector("IOC_PREFIX:", name='det')  # 1idPG4:
 
 Additional setup might be necessary to use the ``dxchange`` format for
 HDF5 output.  For more details, see:
@@ -26,24 +26,65 @@ from ophyd import AreaDetector
 from ophyd import CamBase
 from ophyd import EpicsSignal
 from ophyd import EpicsSignalWithRBV
-from ophyd import HDF5Plugin
-from ophyd import ImagePlugin
 from ophyd import PerkinElmerDetectorCam
 from ophyd import PointGreyDetectorCam
-from ophyd import ProcessPlugin
 from ophyd import SingleTrigger
-from ophyd import TIFFPlugin
-from ophyd import TransformPlugin
 
+from ophyd.areadetector.plugins import HDF5Plugin_V34 as HDF5Plugin
+from ophyd.areadetector.plugins import ImagePlugin_V34 as ImagePlugin
+from ophyd.areadetector.plugins import ProcessPlugin_V34 as ProcessPlugin
+from ophyd.areadetector.plugins import TIFFPlugin_V34 as TIFFPlugin
+from ophyd.areadetector.plugins import TransformPlugin_V34 as TransformPlugin
 
 class MyADEnhancements:
     """Common enhancements mixin class to area detector support here."""
     # TODO: access additional PVs as property,for interactive use as needed
 
     @property
-    def status(self):
-        """List all related PVs and corresponding values"""
-        return "Not implemented yet"  # TODO:
+    def wh(self):
+        """Print table of relevant signals, PVs, and corresponding values."""
+        import pyRestTable
+
+        plugin_signals =  """
+                enable  nd_array_port
+                ad_core_version driver_version
+                file_name file_template file_path
+                num_capture num_captured
+            """.split()
+        interesting_signals = {
+            self: "".split(),
+            self.cam: """
+                acquire_period acquire_time
+                image_mode trigger_mode
+                manufacturer model  status_message
+                num_exposures num_images
+            """.split(),
+            self.hdf1: plugin_signals,
+            self.tiff1: plugin_signals,
+            self.proc1: plugin_signals,
+            self.trans1: plugin_signals + "type_".split(),
+            # TODO: others?
+        }
+
+        table = pyRestTable.Table()
+        table.labels = "name PV value".split()
+        for part, attrs in interesting_signals.items():
+            if len(attrs) == 0:
+                continue
+            for nm in sorted(attrs):
+                try:
+                    obj = getattr(part, nm)
+                    v = obj.get()
+                    row = [f"{self.name}.{part.attr_name}.{nm}",]
+                    if "pvname" in dir(obj):
+                        row.append(obj.pvname)
+                    else:
+                        row.append(obj.prefix)
+                    row.append(v)
+                    table.addRow(row)
+                except AttributeError:
+                    pass
+        print(table)
 
     @property
     def help(self):
@@ -76,7 +117,7 @@ class GEDetector(SingleTrigger, AreaDetector):
         det = GEDetector("GE2:", name='det')
     """
     # TODO:  we might need to switch to raw
-    cam1  = ADComponent(CamBase, suffix="cam1:")
+    cam   = ADComponent(CamBase, suffix="cam1:")
     proc1 = ADComponent(ProcessPlugin, suffix="Proc1:")
     tiff1 = ADComponent(TIFFPlugin, suffix="TIFF1:")
 
@@ -103,7 +144,7 @@ class Varex4343CTCAM6IDD(PerkinElmerDetectorCam):
 class Varex4343CT(MyADEnhancements, SingleTrigger, AreaDetector):
     """Varex 4343CT Detector used at 6-ID-D@APS for ff-HEDM"""
     # TODO: verify all these
-    cam1   = ADComponent(Varex4343CTCAM6IDD,       suffix="cam1:"  )  # camera
+    cam    = ADComponent(Varex4343CTCAM6IDD,       suffix="cam1:"  )  # camera
     proc1  = ADComponent(ProcessPlugin,            suffix="Proc1:" )  # processing
     tiff1  = ADComponent(TIFFPlugin,               suffix="TIFF1:" )  # tiff output
     hdf1   = ADComponent(HDF5Plugin6IDD,           suffix="HDF1:"  )  # HDF5 output
@@ -159,11 +200,16 @@ class PointGreyDetectorCam6IDD(PointGreyDetectorCam):
     frame_rate_on_off       = ADComponent(EpicsSignalWithRBV, "FrameRateOnOff")
     frame_rate_auto_mode    = ADComponent(EpicsSignalWithRBV, "FrameRateAutoMode")
 
+    firmware_version = None
+    pool_max_buffers = None
+    serial_number = None
+    software_version = None
+
 
 class PointGreyDetector(MyADEnhancements, SingleTrigger, AreaDetector):
     """PointGrey Detector used at 6-ID-D@APS for tomo and nf-HEDM"""
 
-    cam1   = ADComponent(PointGreyDetectorCam6IDD, suffix="cam1:"  )  # camera
+    cam    = ADComponent(PointGreyDetectorCam6IDD, suffix="cam1:"  )  # camera
     proc1  = ADComponent(ProcessPlugin,            suffix="Proc1:" )  # processing
     tiff1  = ADComponent(TIFFPlugin,               suffix="TIFF1:" )  # tiff output
     hdf1   = ADComponent(HDF5Plugin6IDD,           suffix="HDF1:"  )  # HDF5 output
@@ -230,7 +276,7 @@ class SimDetector(MyADEnhancements, SingleTrigger, AreaDetector):
     Simulated Detector used at 6-ID-D@APS, based on the Point Grey detector.
     """
 
-    cam1  = ADComponent(SimDetectorCam6IDD, suffix="cam1:" )  # camera
+    cam   = ADComponent(SimDetectorCam6IDD, suffix="cam1:" )  # camera
     proc1 = ADComponent(ProcessPlugin,      suffix="Proc1:")  # processing
     tiff1 = ADComponent(TIFFPlugin,         suffix="TIFF1:")  # tiff output
     hdf1  = ADComponent(HDF5Plugin6IDD,     suffix="HDF1:" )  # HDF5 output
